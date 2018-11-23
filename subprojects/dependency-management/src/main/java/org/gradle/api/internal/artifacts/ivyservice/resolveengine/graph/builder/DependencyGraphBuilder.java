@@ -45,7 +45,6 @@ import org.gradle.api.internal.attributes.ImmutableAttributesFactory;
 import org.gradle.api.specs.Spec;
 import org.gradle.internal.component.external.model.DefaultModuleComponentIdentifier;
 import org.gradle.internal.component.model.DependencyMetadata;
-import org.gradle.internal.component.model.ForcingDependencyMetadata;
 import org.gradle.internal.id.IdGenerator;
 import org.gradle.internal.id.LongIdGenerator;
 import org.gradle.internal.operations.BuildOperationExecutor;
@@ -337,7 +336,7 @@ public class DependencyGraphBuilder {
     private void attachMultipleForceOnPlatformFailureToEdges(ModuleResolveState module) {
         List<EdgeState> forcedEdges = null;
         boolean hasMultipleVersions = false;
-        String currentVersion = maybeFindForcedPlatformVersion(module);
+        String currentVersion = module.maybeFindForcedPlatformVersion();
         Set<ModuleResolveState> participatingModules = module.getPlatformState().getParticipatingModules();
         for (ModuleResolveState participatingModule : participatingModules) {
             for (EdgeState incomingEdge : participatingModule.getIncomingEdges()) {
@@ -367,22 +366,6 @@ public class DependencyGraphBuilder {
         if (hasMultipleVersions) {
             attachFailureToEdges(new GradleException("Multiple forces on different versions for virtual platform " + module.getId()), forcedEdges);
         }
-    }
-
-    private String maybeFindForcedPlatformVersion(ModuleResolveState module) {
-        for (NodeState node : module.getSelected().getNodes()) {
-            if (node.isSelected()) {
-                for (EdgeState incomingEdge : node.getIncomingEdges()) {
-                    DependencyMetadata dependencyMetadata = incomingEdge.getDependencyMetadata();
-                    if (!(dependencyMetadata instanceof LenientPlatformDependencyMetadata) && dependencyMetadata instanceof ForcingDependencyMetadata) {
-                        if (((ForcingDependencyMetadata) dependencyMetadata).isForce()) {
-                            return module.getSelected().getVersion();
-                        }
-                    }
-                }
-            }
-        }
-        return null;
     }
 
     /**
